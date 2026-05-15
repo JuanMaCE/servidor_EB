@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AudioLines, 
@@ -7,7 +7,9 @@ import {
   Edit3, 
   ScrollText, 
   X, 
-  Check, 
+  Check,
+  Upload,
+  FileText,
 } from 'lucide-react';
 import '../../styles/LyricsManager.css';
 
@@ -16,6 +18,7 @@ interface LyricEntry {
   songTitle: string;
   artist: string;
   content: string;
+  fileName: string;
 }
 
 export default function LyricsManager() {
@@ -24,35 +27,77 @@ export default function LyricsManager() {
       id: 1, 
       songTitle: "Blue Moonlight", 
       artist: "Deep Sky", 
-      content: "Bajo la luna azul... (Letra completa aquí)" 
+      content: "Bajo la luna azul... (Letra completa aquí)",
+      fileName: "blue_moonlight.txt"
     }
   ]);
 
   const [isEditing, setIsEditing] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ title: '', artist: '', content: '' });
+  const [formData, setFormData] = useState({ title: '', artist: '', content: '', fileName: '' });
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const readFile = (file: File) => {
+    if (!file.name.endsWith('.txt') && !file.name.endsWith('.lrc')) return;
+    if (file.size > 1048576) return; // 1 MB límite
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      const nameWithoutExt = file.name.replace(/\.(txt|lrc)$/i, '');
+      setFormData(prev => ({
+        ...prev,
+        content,
+        fileName: file.name,
+        title: prev.title || nameWithoutExt,
+      }));
+    };
+    reader.readAsText(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) readFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  };
+
+  const clearFile = () => {
+    setFormData(prev => ({ ...prev, content: '', fileName: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content) return;
 
     if (isEditing !== null) {
-      setLyricsList(lyricsList.map(l => l.id === isEditing ? { ...l, songTitle: formData.title, artist: formData.artist, content: formData.content } : l));
+      setLyricsList(lyricsList.map(l => l.id === isEditing
+        ? { ...l, songTitle: formData.title, artist: formData.artist, content: formData.content, fileName: formData.fileName }
+        : l
+      ));
       setIsEditing(null);
     } else {
-      const newEntry = {
+      setLyricsList([{
         id: Date.now(),
         songTitle: formData.title,
         artist: formData.artist,
-        content: formData.content
-      };
-      setLyricsList([newEntry, ...lyricsList]);
+        content: formData.content,
+        fileName: formData.fileName,
+      }, ...lyricsList]);
     }
-    setFormData({ title: '', artist: '', content: '' });
+    setFormData({ title: '', artist: '', content: '', fileName: '' });
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const startEdit = (lyric: LyricEntry) => {
     setIsEditing(lyric.id);
-    setFormData({ title: lyric.songTitle, artist: lyric.artist, content: lyric.content });
+    setFormData({ title: lyric.songTitle, artist: lyric.artist, content: lyric.content, fileName: lyric.fileName });
   };
 
   const deleteLyric = (id: number) => {
@@ -61,7 +106,6 @@ export default function LyricsManager() {
 
   return (
     <div className="lyrics-manager">
-      {/* Luces de fondo */}
       <div className="glow-effect glow-top" />
       <div className="glow-effect glow-bottom" />
 
@@ -74,7 +118,7 @@ export default function LyricsManager() {
         </header>
 
         <main className="lyrics-grid">
-          {/* Panel de Entrada (Izquierda) */}
+          {/* Panel de Entrada */}
           <section className="entry-panel">
             <div className="glass-panel">
               <h2 className="panel-title">
@@ -95,19 +139,48 @@ export default function LyricsManager() {
                   onChange={(e) => setFormData({...formData, artist: e.target.value})}
                   className="lyric-input"
                 />
-                <textarea 
-                  placeholder="Pega la letra aquí..." 
-                  value={formData.content}
-                  onChange={(e) => setFormData({...formData, content: e.target.value})}
-                  className="lyric-textarea"
-                />
+
+                {/* Drop Zone */}
+                {!formData.content ? (
+                  <div
+                    className={`drop-zone ${isDragging ? 'drag-over' : ''}`}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".txt,.lrc"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                    />
+                    <Upload size={28} className="dz-icon" />
+                    <span className="dz-label">Arrastrá tu archivo o hacé clic</span>
+                    <span className="dz-sub">.txt o .lrc · máx 1 MB</span>
+                  </div>
+                ) : (
+                  <div className="file-pill">
+                    <FileText size={16} />
+                    <span className="file-pill-name">{formData.fileName}</span>
+                    <button type="button" className="file-pill-remove" onClick={clearFile}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <div className="form-actions">
                   <button type="submit" className="btn-primary-action">
                     {isEditing ? <Check size={20} /> : <Plus size={20} />}
                     {isEditing ? 'Actualizar' : 'Guardar Letra'}
                   </button>
                   {isEditing && (
-                    <button type="button" className="btn-cancel-action" onClick={() => {setIsEditing(null); setFormData({title:'', artist:'', content:''})}}>
+                    <button type="button" className="btn-cancel-action" onClick={() => {
+                      setIsEditing(null);
+                      setFormData({ title: '', artist: '', content: '', fileName: '' });
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}>
                       <X size={20} /> Cancelar
                     </button>
                   )}
@@ -116,7 +189,7 @@ export default function LyricsManager() {
             </div>
           </section>
 
-          {/* Panel de Lista (Derecha) */}
+          {/* Panel de Lista */}
           <section className="display-panel">
             <div className="display-header">
               <h3>Letras Guardadas <span>({lyricsList.length})</span></h3>
@@ -140,7 +213,7 @@ export default function LyricsManager() {
                       <div className="lyric-text">
                         <h4>{lyric.songTitle}</h4>
                         <p>{lyric.artist}</p>
-                        <small>{lyric.content.substring(0, 40)}...</small>
+                        <small>{lyric.fileName}</small>
                       </div>
                     </div>
                     

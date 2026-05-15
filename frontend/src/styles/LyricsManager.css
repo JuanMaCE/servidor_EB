@@ -173,3 +173,72 @@
 
 .lyric-btn-delete { background: rgba(239, 68, 68, 0.1); color: #f87171; }
 .lyric-btn-delete:hover { background: #ef4444; color: white; }
+
+.drop-zone {
+  border: 1.5px dashed rgba(255,255,255,0.2);
+  border-radius: 12px;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.05);
+}
+
+.dz-icon {
+  opacity: 0.4;
+}
+
+.dz-label {
+  font-size: 13px;
+  opacity: 0.6;
+  text-align: center;
+}
+
+.dz-sub {
+  font-size: 11px;
+  opacity: 0.35;
+}
+
+.file-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #4ade80;
+}
+
+.file-pill-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-pill-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4ade80;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.file-pill-remove:hover {
+  opacity: 1;
+}
