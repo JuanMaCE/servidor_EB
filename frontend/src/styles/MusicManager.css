@@ -1,0 +1,225 @@
+/* MusicManager.css */
+
+/* Reset Completo */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #020617;
+  color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+}
+
+.manager-container {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  background-color: #020617;
+}
+
+/* Glow Effects */
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 0;
+  filter: blur(120px);
+  pointer-events: none;
+}
+.glow-1 { top: -10%; left: -5%; width: 40vw; height: 40vw; background: rgba(37, 99, 235, 0.15); }
+.glow-2 { bottom: -10%; right: -5%; width: 35vw; height: 35vw; background: rgba(14, 165, 233, 0.1); }
+
+.content-wrapper {
+  position: relative;
+  z-index: 10;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* Header */
+.manager-header {
+  margin-bottom: 3rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+}
+.brand h1 span {
+  color: #3b82f6;
+  font-weight: 300;
+}
+.icon-blue { color: #3b82f6; }
+
+/* Main Layout */
+.manager-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+}
+
+@media (min-width: 1024px) {
+  .manager-main {
+    grid-template-columns: 350px 1fr;
+    align-items: start;
+  }
+}
+
+/* Glass Cards */
+.glass-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  border: none; /* Eliminamos bordes blancos */
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Form Styles */
+.form-card h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+.music-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.input-group input {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.3s;
+}
+.input-group input:focus {
+  border-color: #3b82f6;
+}
+
+.btn-action {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-action:hover {
+  background: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+}
+.btn-cancel {
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+}
+
+/* List Styles */
+.list-header {
+  margin-bottom: 1.5rem;
+}
+.list-header h3 {
+  font-size: 1.5rem;
+}
+.list-header h3 span {
+  color: #64748b;
+  font-weight: 400;
+}
+
+.songs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.song-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  transition: transform 0.2s, background 0.3s;
+}
+.song-item:hover {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.song-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.play-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #60a5fa;
+}
+.song-info h4 {
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+.song-info p {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.song-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-icon.edit {
+  background: rgba(14, 165, 233, 0.1);
+  color: #38bdf8;
+}
+.btn-icon.edit:hover { background: #0ea5e9; color: white; }
+
+.btn-icon.delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+.btn-icon.delete:hover { background: #ef4444; color: white; }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+  font-style: italic;
+}
