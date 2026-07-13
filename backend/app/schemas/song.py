@@ -7,6 +7,7 @@ class SongCreate(BaseModel):
 
 
 class SongResponse(BaseModel):
+    id: int
     name: str
     file_seq: str
     file_lyric: str
