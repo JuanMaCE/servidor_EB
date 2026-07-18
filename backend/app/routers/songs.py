@@ -1,29 +1,79 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 
 from app.database import get_db
 from app.models.song import Song
+from app.models.artist import Artist
+from app.models.songArtist import SongArtist
 from app.schemas.song import SongCreate, SongResponse
-
+from app.schemas.artist import ArtistResponse, ArtistCreate
 
 router = APIRouter(
     prefix="/songs",
     tags=["songs"]
 )
 
+
 @router.post("/", response_model=SongResponse, status_code=status.HTTP_201_CREATED)
-def create_song(song: SongCreate, db: Session = Depends(get_db)):
-    new_song = Song(**song.model_dump())
-    db.add(new_song)
-    db.commit()
-    db.refresh(new_song)
-    return new_song
+def create_song(song_data: SongCreate, db: Session = Depends(get_db)):
+    try:
+        with db.begin():
+            song = Song(
+                name=song_data.name,
+                file_seq=song_data.file_seq,
+                file_lyric=song_data.file_lyric,
+            )
+            db.add(song)
+            db.flush()
+
+            artists = []
+
+            if song_data.artist_ids:
+                artists = list(
+                    db.scalars(
+                        select(Artist).where(Artist.id.in_(song_data.artist_ids))
+                    )
+                )
+                found_ids = {artist.id for artist in artists}
+                missing_ids = set(song_data.artist_ids) - found_ids
+                if missing_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Artists with IDs {sorted(missing_ids)} not found",
+                    )
+
+            for artist_data in song_data.new_artists:
+                artist = Artist(name=artist_data.name)
+                db.add(artist)
+                artists.append(artist)
+
+            db.flush()
+            db.add_all(
+                SongArtist(song_id=song.id, artist_id=artist.id)
+                for artist in artists
+            )
+
+        db.refresh(song)
+        return song
+
+    except IntegrityError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Could not create the song and its artist relationships",
+        ) from error
 
 @router.get("/", response_model=List[SongResponse], status_code=status.HTTP_200_OK)
-def get_songs(skip: int = 0, limit: int = 10, db):
+def get_songs(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     songs = db.query(Song).offset(skip).limit(limit).all()
     return songs
+
 
 @router.get("/{song_id}", response_model=SongResponse, status_code=status.HTTP_200_OK)
 def get_song(song_id: int, db: Session = Depends(get_db)):
@@ -35,12 +85,12 @@ def get_song(song_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{song_id}", response_model=SongResponse, status_code=status.HTTP_200_OK)
 def update_song(song_id: int, song_update: SongCreate, db: Session = Depends(get_db)):
-    song = db.query(Song).filter(Song-id == song_id).first()
+    song = db.query(Song).filter(Song.id == song_id).first()
     if not song:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
     for key, value in song_update.model_dump().items():
         setattr(song, key, value)
-    
+
     db.commit()
     db.refresh(song)
     return song
@@ -51,8 +101,11 @@ def delete_song(song_id: int, db: Session = Depends(get_db)):
     song = db.query(Song).filter(Song.id == song_id).first()
     if not song:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
+    if song.song_artists:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete a song with artist relationships",
+        )
     db.delete(song)
     db.commit()
-    return None 
-
-    
+    return None

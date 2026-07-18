@@ -7,9 +7,8 @@ export default function HomePage() {
   
   return (
     <div className="homepage-wrapper">
-      {/* Background Glow */}
-      <div className="bg-glow glow-1" />
-      <div className="bg-glow glow-2" />
+      <div className="home-glow home-glow-one" />
+      <div className="home-glow home-glow-two" />
 
       {/* Navbar */}
       <header className="navbar">
@@ -18,14 +17,13 @@ export default function HomePage() {
           <h1>EB Music</h1>
         </div>
 
-        <nav className="nav-links">
-          <Link to="/songs">Seqs</Link>
-          <Link to="/lyrics">Letras</Link>
-          <Link to="/charts">Charts</Link>
-        </nav>
+          <nav className="nav-links" aria-label="Navegación principal">
+            <Link to="/songs">Seqs</Link>
+            <Link to="/lyrics">Letras</Link>
+          </nav>
 
-        <Link to="/login" className="btn-login" style={{ textDecoration: 'none' }}>
-          Login
+        <Link to="/songs" className="btn-login">
+          Abrir Studio
         </Link>
       </header>
 
@@ -38,50 +36,53 @@ export default function HomePage() {
           <span className="badge">Plataforma creada por JuanMaCE</span>
 
           <h2 className="hero-title">
-            Encuentra secuencias,
+            Organiza secuencias,
             <br />
-            <span className="text-gradient">Letras & Charts</span>
+            <span className="text-gradient">letras y repertorio</span>
           </h2>
 
           <p className="hero-desc">
-            Descarga, busca y sube canciones y letras 
+            Gestiona desde un solo lugar los recursos musicales de tu biblioteca.
           </p>
 
           <div className="hero-buttons">
-            <Link to="/studio" className="btn-primary" style={{ textDecoration: 'none' }}>
+            <Link to="/songs" className="btn-primary">
               <Play size={20} fill="currentColor" /> Empieza
             </Link>
             
-            <Link to="/charts" className="btn-secondary" style={{ textDecoration: 'none' }}>
-              Explora Charts
+            <Link to="/lyrics" className="btn-secondary">
+              Explorar letras
             </Link>
           </div>
         </motion.div>
 
         <section className="cards-grid">
-          <motion.div whileHover={{ y: -8 }} className="card">
+          <motion.article whileHover={{ y: -8 }} className="card">
             <div className="card-icon icon-blue">
               <Music2 color="#60a5fa" size={32} />
             </div>
             <h3>Secuencias</h3>
-            <p>Busca cualquier secuencia que necesites.</p>
-          </motion.div>
+            <p>Guarda y localiza las referencias de tus secuencias.</p>
+            <Link to="/songs">Gestionar secuencias</Link>
+          </motion.article>
 
-          <motion.div whileHover={{ y: -8 }} className="card">
+          <motion.article whileHover={{ y: -8 }} className="card">
             <div className="card-icon icon-sky">
               <AudioLines color="#38bdf8" size={32} />
             </div>
             <h3>Letras</h3>
-            <p>Busca y sube las letras para holylirics</p>
-          </motion.div>
+            <p>Importa archivos, revisa su contenido y mantén tus letras al día.</p>
+            <Link to="/lyrics">Gestionar letras</Link>
+          </motion.article>
 
-          <motion.div whileHover={{ y: -8 }} className="card">
+          <motion.article whileHover={{ y: -8 }} className="card card-muted">
             <div className="card-icon icon-indigo">
               <ChartColumnBig color="#818cf8" size={32} />
             </div>
             <h3>Charts</h3>
-            <p>Encuentra nuestros charts</p>
-          </motion.div>
+            <p>Una vista de charts llegará en una próxima versión.</p>
+            <span>Próximamente</span>
+          </motion.article>
         </section>
       </main>
     </div>
