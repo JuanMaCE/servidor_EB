@@ -1,7 +1,7 @@
 <h1 align="center">EB Music Studio</h1>
 
 <p align="center">
-  Plataforma web para centralizar secuencias de audio, letras y repertorio musical.
+  Web platform for centralizing audio sequences, lyrics, and music repertoire.
 </p>
 
 <p align="center">
@@ -11,30 +11,30 @@
   <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
 </p>
 
-## Sobre el proyecto
+## About the project
 
-EB Music Studio nace para resolver un problema concreto: mantener organizados, accesibles y relacionados los recursos que forman parte de un repertorio musical.
+EB Music Studio was created to solve a specific problem: keeping the resources that make up a music repertoire organized, accessible, and connected.
 
-La aplicación ofrece una interfaz visual para administrar canciones, artistas, archivos de secuencia y letras desde un único lugar. El proyecto está construido como una solución full stack, con un cliente React que consume una API REST desarrollada con FastAPI y persistencia en PostgreSQL.
+The application provides a visual interface for managing songs, artists, sequence files, and lyrics in one place. The project is built as a full-stack solution, with a React client consuming a REST API developed with FastAPI and PostgreSQL for persistence.
 
-> Estado: proyecto en desarrollo activo. La gestión de secuencias y letras ya está implementada; nuevas vistas, como charts, forman parte del roadmap.
+> Status: under active development. Sequence and lyrics management are already implemented; new views, such as charts, are part of the roadmap.
 
-## Funcionalidades
+## Features
 
-- Crear, consultar, editar y eliminar canciones.
-- Asociar artistas con canciones mediante una relación muchos a muchos.
-- Subir secuencias en formatos `.mid`, `.midi`, `.mp3` y `.wav`.
-- Validar el tipo y tamaño de los archivos tanto en el cliente como en el servidor.
-- Importar letras desde archivos `.txt` y `.lrc`, o editarlas directamente.
-- Conservar la letra cuando se elimina una secuencia, y viceversa.
-- Descargar los archivos almacenados desde la biblioteca.
-- Consultar y probar la API desde la documentación interactiva de FastAPI.
-- Navegar por una interfaz responsive con animaciones y estados de carga, error y contenido vacío.
+- Create, view, edit, and delete songs.
+- Associate artists with songs through a many-to-many relationship.
+- Upload sequences in `.mid`, `.midi`, `.mp3`, and `.wav` formats.
+- Validate file types and sizes on both the client and server.
+- Import lyrics from `.txt` and `.lrc` files or edit them directly.
+- Preserve lyrics when a sequence is deleted, and vice versa.
+- Download stored files from the library.
+- Explore and test the API through FastAPI's interactive documentation.
+- Navigate a responsive interface with animations and loading, error, and empty states.
 
-## Arquitectura
+## Architecture
 
 ```text
-Navegador
+Browser
    |
    v
 React + TypeScript + Vite
@@ -44,38 +44,38 @@ React + TypeScript + Vite
 FastAPI + Pydantic
    |                    |
    v                    v
-PostgreSQL         Almacenamiento local
-SQLAlchemy         de secuencias
+PostgreSQL         Local sequence
+SQLAlchemy         storage
 ```
 
-El frontend separa páginas, componentes reutilizables, hooks, tipos y servicios HTTP. El backend organiza la lógica en routers, esquemas de validación y modelos de persistencia. Alembic mantiene versionado el esquema de la base de datos.
+The frontend separates pages, reusable components, hooks, types, and HTTP services. The backend organizes its logic into routers, validation schemas, and persistence models. Alembic provides database schema versioning.
 
-## Tecnologías
+## Technologies
 
-| Área | Tecnologías |
+| Area | Technologies |
 | --- | --- |
 | Frontend | React 19, TypeScript, Vite, React Router |
 | UI | CSS, Framer Motion, Lucide React |
 | Backend | Python, FastAPI, Pydantic, Uvicorn |
-| Datos | PostgreSQL, SQLAlchemy, Alembic, Psycopg |
-| Calidad | ESLint, validación tipada y documentación OpenAPI |
+| Data | PostgreSQL, SQLAlchemy, Alembic, Psycopg |
+| Quality | ESLint, typed validation, and OpenAPI documentation |
 
-## Puesta en marcha
+## Getting started
 
-### Requisitos
+### Requirements
 
-- Node.js 20.19 o superior.
-- Python 3.12 o superior.
+- Node.js 20.19 or later.
+- Python 3.12 or later.
 - PostgreSQL.
 
-### 1. Clonar el repositorio
+### 1. Clone the repository
 
 ```bash
 git clone git@github.com:JuanMaCE/servidor_EB.git
 cd servidor_EB
 ```
 
-### 2. Configurar el backend
+### 2. Set up the backend
 
 ```bash
 cd backend
@@ -84,24 +84,24 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Crea `backend/.env` con la conexión a PostgreSQL:
+Create `backend/.env` with the PostgreSQL connection string:
 
 ```env
-DATABASE_URL=postgresql+psycopg://usuario:contrasena@localhost:5432/eb_music
+DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/eb_music
 ```
 
-Aplica las migraciones e inicia la API:
+Apply the migrations and start the API:
 
 ```bash
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-La API estará disponible en `http://127.0.0.1:8000` y su documentación interactiva en `http://127.0.0.1:8000/docs`.
+The API will be available at `http://127.0.0.1:8000`, with its interactive documentation at `http://127.0.0.1:8000/docs`.
 
-### 3. Configurar el frontend
+### 3. Set up the frontend
 
-En otra terminal:
+In another terminal:
 
 ```bash
 cd frontend
@@ -109,9 +109,9 @@ npm install
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:5173`. Durante el desarrollo, Vite redirige automáticamente las peticiones de `/api` al backend local.
+The application will be available at `http://localhost:5173`. During development, Vite automatically proxies `/api` requests to the local backend.
 
-Para consumir una API alojada en otra dirección, crea `frontend/.env.local`:
+To consume an API hosted at a different address, create `frontend/.env.local`:
 
 ```env
 VITE_API_URL=https://api.example.com
@@ -119,56 +119,56 @@ VITE_API_URL=https://api.example.com
 
 ## API REST
 
-| Recurso | Responsabilidad |
+| Resource | Responsibility |
 | --- | --- |
-| `/songs/` | CRUD de canciones, secuencias y letras |
-| `/artists/` | CRUD de artistas |
-| `/song-artists/` | Gestión de relaciones entre canciones y artistas |
-| `/files/sequences/` | Carga y descarga de archivos de secuencia |
+| `/songs/` | CRUD operations for songs, sequences, and lyrics |
+| `/artists/` | CRUD operations for artists |
+| `/song-artists/` | Management of song-artist relationships |
+| `/files/sequences/` | Upload and download of sequence files |
 
-Los listados aceptan paginación mediante los parámetros `skip` y `limit`. FastAPI expone el contrato OpenAPI completo en `/docs` y `/redoc`.
+List endpoints support pagination through the `skip` and `limit` parameters. FastAPI exposes the complete OpenAPI contract at `/docs` and `/redoc`.
 
-## Estructura del proyecto
+## Project structure
 
 ```text
 servidor_EB/
 ├── backend/
-│   ├── alembic/             # Migraciones de base de datos
+│   ├── alembic/             # Database migrations
 │   ├── app/
-│   │   ├── models/          # Modelos SQLAlchemy
-│   │   ├── routers/         # Endpoints de la API
-│   │   ├── schemas/         # Esquemas Pydantic
-│   │   ├── database.py      # Conexión y sesiones
-│   │   └── main.py          # Entrada de FastAPI
-│   ├── storage/sequences/   # Archivos musicales almacenados
+│   │   ├── models/          # SQLAlchemy models
+│   │   ├── routers/         # API endpoints
+│   │   ├── schemas/         # Pydantic schemas
+│   │   ├── database.py      # Connection and sessions
+│   │   └── main.py          # FastAPI entry point
+│   ├── storage/sequences/   # Stored music files
 │   └── requirements.txt
 └── frontend/
     ├── src/
-    │   ├── components/      # Componentes reutilizables
-    │   ├── hooks/           # Estado y acceso a la biblioteca
-    │   ├── pages/           # Inicio, secuencias y letras
-    │   ├── services/        # Cliente de la API
-    │   ├── styles/          # Estilos globales y de páginas
-    │   └── types/           # Contratos TypeScript
+    │   ├── components/      # Reusable components
+    │   ├── hooks/           # State and library access
+    │   ├── pages/           # Home, sequences, and lyrics
+    │   ├── services/        # API client
+    │   ├── styles/          # Global and page styles
+    │   └── types/           # TypeScript contracts
     └── package.json
 ```
 
-## Verificación
+## Verification
 
-Desde `frontend/`:
+From `frontend/`:
 
 ```bash
 npm run lint
 npm run build
 ```
 
-## Próximos pasos
+## Roadmap
 
-- Incorporar la vista de charts.
-- Añadir autenticación y bibliotecas por usuario.
-- Ampliar la cobertura de pruebas automáticas.
-- Preparar almacenamiento de archivos para un entorno de producción.
+- Add the charts view.
+- Add authentication and per-user libraries.
+- Expand automated test coverage.
+- Prepare file storage for a production environment.
 
-## Autor
+## Author
 
-Desarrollado por [JuanMaCE](https://github.com/JuanMaCE) como proyecto full stack para portfolio.
+Developed by [JuanMaCE](https://github.com/JuanMaCE) as a full-stack portfolio project.
