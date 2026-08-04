@@ -46,6 +46,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .button-quiet { color: #cbd5e1; background: rgba(51, 65, 85, 0.5); }
 .button-quiet:hover:not(:disabled) { background: rgba(71, 85, 105, 0.75); }
 .form-error { margin: 0; padding: 0.75rem; border-radius: 0.65rem; color: #fecaca; background: rgba(127, 29, 29, 0.35); font-size: 0.82rem; line-height: 1.45; }
+.current-file { margin: 0; padding: 0.7rem 0.8rem; border-radius: 0.7rem; color: #93c5fd; background: rgba(37, 99, 235, 0.1); font-size: 0.78rem; line-height: 1.45; }
 
 .library-panel { min-width: 0; }
 .section-heading { min-height: 65px; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
@@ -63,8 +64,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .entity-actions { flex: 0 0 auto; display: flex; gap: 0.45rem; }
 .icon-button { width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 0.7rem; cursor: pointer; }
 .icon-button-edit { color: #38bdf8; background: rgba(14, 165, 233, 0.11); }
+.icon-button-download { color: #86efac; background: rgba(34, 197, 94, 0.11); text-decoration: none; }
 .icon-button-danger { color: #f87171; background: rgba(239, 68, 68, 0.11); }
 .icon-button-edit:hover { color: #fff; background: #0284c7; }
+.icon-button-download:hover { color: #fff; background: #16a34a; }
 .icon-button-danger:hover { color: #fff; background: #dc2626; }
 .status-notice { margin: 0; padding: 2rem; border-radius: 1rem; color: #94a3b8; text-align: center; background: rgba(15, 23, 42, 0.45); }
 .status-error { display: grid; justify-items: center; gap: 0.75rem; color: #fecaca; }

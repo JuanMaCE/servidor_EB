@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react';
-import type { ChangeEvent, DragEvent, FormEvent, KeyboardEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Edit3, FileText, ScrollText, Trash2, Upload, X } from 'lucide-react';
+import { Edit3, ScrollText, Trash2 } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
+import { FileDropzone } from '../../components/FileDropzone';
 import { FormActions } from '../../components/FormActions';
 import { IconButton } from '../../components/IconButton';
 import { StatusNotice } from '../../components/StatusNotice';
 import { useSongLibrary } from '../../hooks/useSongLibrary';
-import { createSong, deleteSong, updateSong } from '../../services/songs';
+import { createSong, deleteLyrics, updateSong } from '../../services/songs';
 import type { Song } from '../../types/song';
 
 const EMPTY_FORM = { name: '', artist: '', lyrics: '', fileName: '' };
@@ -18,16 +19,14 @@ export default function LyricsManager() {
   const lyricSongs = songs.filter((song) => song.lyrics);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setEditingSong(null);
     setForm(EMPTY_FORM);
     setActionError('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const readFile = (file: File) => {
@@ -52,25 +51,6 @@ export default function LyricsManager() {
     };
     reader.onerror = () => setActionError('No se pudo leer el archivo.');
     reader.readAsText(file);
-  };
-
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) readFile(file);
-  };
-
-  const handleDrop = (event: DragEvent) => {
-    event.preventDefault();
-    setIsDragging(false);
-    const file = event.dataTransfer.files[0];
-    if (file) readFile(file);
-  };
-
-  const handleDropKey = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      fileInputRef.current?.click();
-    }
   };
 
   const startEdit = (song: Song) => {
@@ -106,14 +86,18 @@ export default function LyricsManager() {
   };
 
   const handleDelete = async (song: Song) => {
-    if (!window.confirm(`¿Eliminar "${song.name}"? Esta acción no se puede deshacer.`)) return;
+    const detail = song.sequence ? 'La secuencia se conservará.' : 'También se eliminará la canción porque no contiene una secuencia.';
+    if (!window.confirm(`¿Eliminar la letra de "${song.name}"? ${detail}`)) return;
+    setDeletingId(song.id);
     setActionError('');
     try {
-      await deleteSong(song);
+      await deleteLyrics(song);
       if (editingSong?.id === song.id) resetForm();
       reload();
     } catch (requestError) {
       setActionError(requestError instanceof Error ? requestError.message : 'No se pudo eliminar la letra');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -127,14 +111,14 @@ export default function LyricsManager() {
           <form className="entity-form" onSubmit={handleSubmit}>
             <label>Título<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required maxLength={150} /></label>
             <label>Artista<input value={form.artist} onChange={(event) => setForm({ ...form, artist: event.target.value })} required maxLength={150} /></label>
-            {!form.lyrics ? (
-              <div className={`drop-zone ${isDragging ? 'is-dragging' : ''}`} role="button" tabIndex={0} onKeyDown={handleDropKey} onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()}>
-                <input ref={fileInputRef} type="file" accept=".txt,.lrc" onChange={handleFileChange} hidden />
-                <Upload size={26} /><strong>Selecciona o arrastra un archivo</strong><span>.txt o .lrc, máximo 1 MB</span>
-              </div>
-            ) : (
-              <div className="file-pill"><FileText size={17} /><span>{form.fileName || 'Contenido escrito'}</span><button type="button" aria-label="Quitar letra" onClick={() => setForm({ ...form, lyrics: '', fileName: '' })}><X size={15} /></button></div>
-            )}
+            <FileDropzone
+              accept=".txt,.lrc"
+              label="Seleccionar o arrastrar una letra"
+              hint=".txt o .lrc, máximo 1 MB"
+              selectedName={form.lyrics ? form.fileName || 'Contenido escrito' : undefined}
+              onSelect={readFile}
+              onClear={() => setForm({ ...form, lyrics: '', fileName: '' })}
+            />
             <label>Contenido<textarea value={form.lyrics} onChange={(event) => setForm({ ...form, lyrics: event.target.value, fileName: form.fileName || 'Contenido escrito' })} rows={9} placeholder="Escribe o importa la letra..." /></label>
             {actionError && <p className="form-error" role="alert">{actionError}</p>}
             <FormActions isEditing={editingSong !== null} isSaving={isSaving} createLabel="Guardar letra" onCancel={resetForm} />
@@ -149,7 +133,7 @@ export default function LyricsManager() {
               {lyricSongs.map((song) => (
                 <motion.article key={song.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="entity-card">
                   <div className="entity-main"><span className="entity-icon"><ScrollText size={20} /></span><div className="entity-copy"><h3>{song.name}</h3><p>{song.artist}</p><small>Letra disponible</small></div></div>
-                  <div className="entity-actions"><IconButton label={`Editar ${song.name}`} onClick={() => startEdit(song)}><Edit3 size={18} /></IconButton><IconButton label={`Eliminar ${song.name}`} tone="danger" onClick={() => handleDelete(song)}><Trash2 size={18} /></IconButton></div>
+                  <div className="entity-actions"><IconButton label={`Editar ${song.name}`} onClick={() => startEdit(song)}><Edit3 size={18} /></IconButton><IconButton label={`Eliminar ${song.name}`} tone="danger" disabled={deletingId === song.id} onClick={() => handleDelete(song)}><Trash2 size={18} /></IconButton></div>
                 </motion.article>
               ))}
             </AnimatePresence>

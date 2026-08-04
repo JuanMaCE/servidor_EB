@@ -1,7 +1,17 @@
-import { apiRequest } from './api';
+import { apiRequest, toApiUrl } from './api';
 import type { ArtistDto, SaveSongInput, Song, SongArtistDto, SongDto } from '../types/song';
 
 const PAGE_LIMIT = 100;
+
+interface UploadedFileDto {
+  filename: string;
+  file_seq: string;
+}
+
+export function getSequenceDownloadUrl(fileSequence: string): string {
+  const path = fileSequence.split('/').map(encodeURIComponent).join('/');
+  return toApiUrl(`/files/sequences/${path}`);
+}
 
 function toSong(song: SongDto, artists: ArtistDto[], relations: SongArtistDto[]): Song {
   const songRelations = relations.filter((relation) => relation.song_id === song.id);
@@ -44,6 +54,16 @@ export async function createSong(input: SaveSongInput): Promise<void> {
   });
 }
 
+export async function uploadSequence(file: File): Promise<UploadedFileDto> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiRequest<UploadedFileDto>('/files/sequences/', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export async function updateSong(song: Song, input: SaveSongInput): Promise<void> {
   await apiRequest<SongDto>(`/songs/${song.id}`, {
     method: 'PUT',
@@ -72,4 +92,32 @@ export async function updateSong(song: Song, input: SaveSongInput): Promise<void
 export async function deleteSong(song: Song): Promise<void> {
   await Promise.all(song.relationIds.map((id) => apiRequest<void>(`/song-artists/${id}`, { method: 'DELETE' })));
   await apiRequest<void>(`/songs/${song.id}`, { method: 'DELETE' });
+}
+
+export async function deleteSequence(song: Song): Promise<void> {
+  if (!song.lyrics) {
+    await deleteSong(song);
+    return;
+  }
+
+  await updateSong(song, {
+    name: song.name,
+    artist: song.artist,
+    sequence: null,
+    lyrics: song.lyrics,
+  });
+}
+
+export async function deleteLyrics(song: Song): Promise<void> {
+  if (!song.sequence) {
+    await deleteSong(song);
+    return;
+  }
+
+  await updateSong(song, {
+    name: song.name,
+    artist: song.artist,
+    sequence: song.sequence,
+    lyrics: null,
+  });
 }

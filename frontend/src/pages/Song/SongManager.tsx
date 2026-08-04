@@ -1,16 +1,26 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Edit3, FileMusic, Trash2 } from 'lucide-react';
+import { Download, Edit3, FileMusic, Trash2 } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
+import { FileDropzone } from '../../components/FileDropzone';
 import { FormActions } from '../../components/FormActions';
 import { IconButton } from '../../components/IconButton';
 import { StatusNotice } from '../../components/StatusNotice';
 import { useSongLibrary } from '../../hooks/useSongLibrary';
-import { createSong, deleteSong, updateSong } from '../../services/songs';
+import { createSong, deleteSequence, getSequenceDownloadUrl, updateSong, uploadSequence } from '../../services/songs';
 import type { Song } from '../../types/song';
 
-const EMPTY_FORM = { name: '', artist: '', sequence: '' };
+interface SequenceForm {
+  name: string;
+  artist: string;
+  currentSequence: string;
+  file: File | null;
+}
+
+const EMPTY_FORM: SequenceForm = { name: '', artist: '', currentSequence: '', file: null };
+const MAX_SEQUENCE_SIZE = 20 * 1024 * 1024;
+const SEQUENCE_EXTENSIONS = /\.(mid|midi|mp3|wav)$/i;
 
 export default function SongManager() {
   const { songs, isLoading, error: loadError, reload } = useSongLibrary();
@@ -18,6 +28,7 @@ export default function SongManager() {
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
 
   const resetForm = () => {
@@ -28,26 +39,42 @@ export default function SongManager() {
 
   const startEdit = (song: Song) => {
     setEditingSong(song);
-    setForm({ name: song.name, artist: song.artist, sequence: song.sequence ?? '' });
+    setForm({ name: song.name, artist: song.artist, currentSequence: song.sequence ?? '', file: null });
+    setActionError('');
+  };
+
+  const selectSequence = (file: File) => {
+    if (!SEQUENCE_EXTENSIONS.test(file.name)) {
+      setActionError('El archivo debe ser .mid, .midi, .mp3 o .wav.');
+      return;
+    }
+    if (file.size > MAX_SEQUENCE_SIZE) {
+      setActionError('El archivo no puede superar 20 MB.');
+      return;
+    }
+    setForm((current) => ({ ...current, file }));
     setActionError('');
   };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const input = {
-      name: form.name.trim(),
-      artist: form.artist.trim(),
-      sequence: form.sequence.trim() || null,
-      lyrics: editingSong?.lyrics ?? null,
-    };
-    if (!input.name || !input.artist || !input.sequence) {
-      setActionError('Completa el título, el artista y la referencia de la secuencia.');
+    const name = form.name.trim();
+    const artist = form.artist.trim();
+    if (!name || !artist || (!form.file && !form.currentSequence)) {
+      setActionError('Completa el título, el artista y selecciona una secuencia.');
       return;
     }
 
     setIsSaving(true);
     setActionError('');
     try {
+      const uploaded = form.file ? await uploadSequence(form.file) : null;
+      const input = {
+        name,
+        artist,
+        sequence: uploaded?.file_seq ?? form.currentSequence,
+        lyrics: editingSong?.lyrics ?? null,
+      };
       if (editingSong) await updateSong(editingSong, input);
       else await createSong(input);
       resetForm();
@@ -60,14 +87,18 @@ export default function SongManager() {
   };
 
   const handleDelete = async (song: Song) => {
-    if (!window.confirm(`¿Eliminar "${song.name}"? Esta acción no se puede deshacer.`)) return;
+    const detail = song.lyrics ? 'La letra se conservará.' : 'También se eliminará la canción porque no contiene una letra.';
+    if (!window.confirm(`¿Eliminar la secuencia de "${song.name}"? ${detail}`)) return;
+    setDeletingId(song.id);
     setActionError('');
     try {
-      await deleteSong(song);
+      await deleteSequence(song);
       if (editingSong?.id === song.id) resetForm();
       reload();
     } catch (requestError) {
       setActionError(requestError instanceof Error ? requestError.message : 'No se pudo eliminar la secuencia');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -77,7 +108,7 @@ export default function SongManager() {
         <section className="glass-panel form-panel">
           <p className="eyebrow">Biblioteca</p>
           <h1>{editingSong ? 'Editar secuencia' : 'Nueva secuencia'}</h1>
-          <p className="panel-description">Guarda la referencia que utiliza el servidor para localizar el archivo.</p>
+          <p className="panel-description">Sube el archivo que el servidor conservará para compartirlo con la biblioteca.</p>
           <form className="entity-form" onSubmit={handleSubmit}>
             <label>
               Título
@@ -87,10 +118,17 @@ export default function SongManager() {
               Artista
               <input value={form.artist} onChange={(event) => setForm({ ...form, artist: event.target.value })} required maxLength={150} />
             </label>
-            <label>
-              Referencia de la secuencia
-              <input value={form.sequence} onChange={(event) => setForm({ ...form, sequence: event.target.value })} placeholder="secuencias/cancion.mid" required />
-            </label>
+            {form.currentSequence && !form.file && (
+              <p className="current-file">La secuencia actual se conservará si no seleccionas otra.</p>
+            )}
+            <FileDropzone
+              accept=".mid,.midi,.mp3,.wav"
+              label={editingSong ? 'Seleccionar un archivo para reemplazarlo' : 'Seleccionar o arrastrar una secuencia'}
+              hint=".mid, .midi, .mp3 o .wav; máximo 20 MB"
+              selectedName={form.file?.name}
+              onSelect={selectSequence}
+              onClear={() => setForm((current) => ({ ...current, file: null }))}
+            />
             {actionError && <p className="form-error" role="alert">{actionError}</p>}
             <FormActions isEditing={editingSong !== null} isSaving={isSaving} createLabel="Guardar secuencia" onCancel={resetForm} />
           </form>
@@ -111,8 +149,9 @@ export default function SongManager() {
                     <div className="entity-copy"><h3>{song.name}</h3><p>{song.artist}</p><small>{song.sequence}</small></div>
                   </div>
                   <div className="entity-actions">
+                    <a className="icon-button icon-button-download" href={getSequenceDownloadUrl(song.sequence ?? '')} aria-label={`Descargar ${song.name}`} title={`Descargar ${song.name}`} download><Download size={18} /></a>
                     <IconButton label={`Editar ${song.name}`} onClick={() => startEdit(song)}><Edit3 size={18} /></IconButton>
-                    <IconButton label={`Eliminar ${song.name}`} tone="danger" onClick={() => handleDelete(song)}><Trash2 size={18} /></IconButton>
+                    <IconButton label={`Eliminar ${song.name}`} tone="danger" disabled={deletingId === song.id} onClick={() => handleDelete(song)}><Trash2 size={18} /></IconButton>
                   </div>
                 </motion.article>
               ))}

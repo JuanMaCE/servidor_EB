@@ -1,8 +1,10 @@
+from pathlib import Path
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import List
 
 from app.database import get_db
 from app.models.song import Song
@@ -15,6 +17,17 @@ router = APIRouter(
     prefix="/songs",
     tags=["songs"]
 )
+
+STORAGE_ROOT = Path("storage")
+
+
+def _delete_sequence_file(file_seq: str | None) -> None:
+    if not file_seq:
+        return
+    storage_root = STORAGE_ROOT.resolve()
+    file_path = (storage_root / file_seq).resolve()
+    if file_path.is_relative_to(storage_root):
+        file_path.unlink(missing_ok=True)
 
 
 @router.post("/", response_model=SongResponse, status_code=status.HTTP_201_CREATED)
@@ -65,6 +78,7 @@ def create_song(song_data: SongCreate, db: Session = Depends(get_db)):
             detail="Could not create the song and its artist relationships",
         ) from error
 
+
 @router.get("/", response_model=List[SongResponse], status_code=status.HTTP_200_OK)
 def get_songs(
     skip: int = Query(0, ge=0),
@@ -88,10 +102,22 @@ def update_song(song_id: int, song_update: SongCreate, db: Session = Depends(get
     song = db.query(Song).filter(Song.id == song_id).first()
     if not song:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
-    for key, value in song_update.model_dump().items():
-        setattr(song, key, value)
 
-    db.commit()
+    old_file_seq = song.file_seq
+    new_file_seq = song_update.file_seq
+
+    try:
+        song.name = song_update.name
+        song.file_seq = new_file_seq
+        song.file_lyric = song_update.file_lyric
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    if old_file_seq and old_file_seq != new_file_seq:
+        _delete_sequence_file(old_file_seq)
+
     db.refresh(song)
     return song
 
@@ -101,11 +127,21 @@ def delete_song(song_id: int, db: Session = Depends(get_db)):
     song = db.query(Song).filter(Song.id == song_id).first()
     if not song:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
+
     if song.song_artists:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Cannot delete a song with artist relationships",
         )
-    db.delete(song)
-    db.commit()
+
+    old_file_seq = song.file_seq
+
+    try:
+        db.delete(song)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    _delete_sequence_file(old_file_seq)
     return None

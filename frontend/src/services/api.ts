@@ -1,5 +1,10 @@
 const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
+export function toApiUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 interface ApiErrorBody {
   detail?: string | Array<{ msg?: string }>;
 }
@@ -15,10 +20,11 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
     },
   });
